@@ -8,6 +8,15 @@ import { C, C_BLUE, cellColour, deltaColour, socColour } from '../../shared/colo
 import { formatW, formatA, formatV, formatMv, formatKwh, formatTimeRemaining, formatEta, formatTemp, formatDbm } from '../../shared/formatters';
 import { voltageToSocPct } from '../../shared/lifepo4';
 
+function wifiBar(dbm: number | null): string {
+  if (dbm === null) return '···';
+  if (dbm > -50) return '▂▄▆█';
+  if (dbm > -65) return '▂▄▆░';
+  if (dbm > -75) return '▂▄░░';
+  if (dbm > -85) return '▂░░░';
+  return '░░░░';
+}
+
 interface TooltipInfo {
   cellIdx: number;
   batSn: string;
@@ -293,23 +302,21 @@ export class FelicityFleetCard extends LitElement {
     const warnClass = (bat.warningCount > 0 || healthStatus === 'warn' || healthStatus === 'bad') ? ' warn' : '';
 
     const trend = health?.trend ?? null;
-    const trendClass = trend?.includes('improving') ? 'trend-improving'
-      : trend?.includes('worsening') ? 'trend-worsening'
-        : 'trend-stable';
+    const trendArrow = trend?.includes('improving') ? '↑' : trend?.includes('worsening') ? '↓' : '→';
+    const trendColor = trend?.includes('improving') ? '#00ff88' : trend?.includes('worsening') ? '#ff4444' : '#ffd700';
 
     const showModuleTemps = this._config?.show_module_temps !== false;
-    const showTrend = this._config?.show_trend !== false;
 
     const cellBarHeight = (mv: number) => {
       const min = Math.min(...allMv, 0);
       const max = Math.max(...allMv, 1);
       const norm = max === min ? 0.7 : 0.4 + 0.55 * ((mv - min) / (max - min));
-      return Math.max(8, Math.round(norm * 52));
+      return Math.max(6, Math.round(norm * 30));
     };
 
     return html`
       <div class="battery-card ${stateClass}${warnClass}">
-        <!-- Header -->
+        <!-- Compact header: alias · badges · SOC · kWh -->
         <div class="bat-header">
           <span class="bat-alias">${bat.alias}</span>
           ${this._renderHealthBadge(healthStatus, socStatus)}
@@ -317,78 +324,45 @@ export class FelicityFleetCard extends LitElement {
           ${bat.chargingState === 'discharging'? html`<span class="state-badge badge-dchg">▼ DCHG</span>` : nothing}
           ${bat.chargingState === 'standby'    ? html`<span class="state-badge badge-idle">◼ IDLE</span>` : nothing}
           ${bat.isBalancing                    ? html`<span class="state-badge badge-bal">⚡ BAL</span>` : nothing}
+          <span class="soc-inline" style=${styleMap({ color: socColor })}>${bat.soc}%</span>
+          <span class="soc-kwh-inline">${formatKwh(bat.remainingKwh)}</span>
         </div>
 
-        <!-- SOC -->
-        <div class="soc-row">
-          <span class="soc-pct" style=${styleMap({ color: socColor })}>${bat.soc}%</span>
-          <span class="soc-kwh">${formatKwh(bat.remainingKwh)}</span>
-        </div>
-        <div class="soc-bar-track">
-          <div class="soc-bar-fill" style=${styleMap({
-            width: `${bat.soc}%`,
-            background: `linear-gradient(90deg, ${socColor}88, ${socColor})`,
-          })}></div>
-        </div>
-        <div class="time-est">
-          ${timeEst.direction === 'full'
-            ? html`<strong>FULL IN</strong> ${timeEst.label.replace('FULL IN ', '')} <span class="eta">${timeEst.etaStr}</span>`
-            : timeEst.direction === 'empty'
-              ? html`<strong>EMPTY IN</strong> ${timeEst.label.replace('EMPTY IN ', '')} <span class="eta">${timeEst.etaStr}</span>`
-              : html`<strong>${timeEst.label}</strong>`}
+        <!-- SOC bar + time estimate inline -->
+        <div class="soc-bar-row">
+          <div class="soc-bar-track">
+            <div class="soc-bar-fill" style=${styleMap({
+              width: `${bat.soc}%`,
+              background: `linear-gradient(90deg, ${socColor}88, ${socColor})`,
+            })}></div>
+          </div>
+          <span class="time-est">
+            ${timeEst.direction === 'full'
+              ? html`<strong>FULL IN</strong> ${timeEst.label.replace('FULL IN ', '')} <span class="eta">${timeEst.etaStr}</span>`
+              : timeEst.direction === 'empty'
+                ? html`<strong>EMPTY IN</strong> ${timeEst.label.replace('EMPTY IN ', '')} <span class="eta">${timeEst.etaStr}</span>`
+                : html`<strong>${timeEst.label}</strong>`}
+          </span>
         </div>
 
-        <!-- Stats -->
-        <div class="stats-row">
-          <div class="stat">
-            <span class="stat-label">Power</span>
-            <span class="stat-value" style=${styleMap({ color: bat.power > 5 ? '#00ff88' : bat.power < -5 ? '#ffd700' : C.dim })}>
-              ${formatW(bat.power)}
-            </span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Current</span>
-            <span class="stat-value">${formatA(bat.current)}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Voltage</span>
-            <span class="stat-value">${formatV(bat.voltage)}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Temp</span>
-            <span class="stat-value" style=${styleMap({ color: bat.tempMax > 35 ? C.orange : bat.tempMax > 40 ? C.red : C.text })}>
-              ${formatTemp(bat.tempMax)}
-            </span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">SOH</span>
-            <span class="stat-value" style=${styleMap({ color: bat.soh < 80 ? C.orange : bat.soh < 60 ? C.red : C.text })}>
-              ${bat.soh}%
-            </span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Cell Δ</span>
-            <span class="stat-value" style=${styleMap({ color: deltaColor })}>
-              ${bat.cellDelta != null ? formatMv(bat.cellDelta) : '—'}
-            </span>
-          </div>
+        <!-- Single-line stats -->
+        <div class="stats-line">
+          <span style=${styleMap({ color: bat.power > 5 ? '#00ff88' : bat.power < -5 ? '#ffd700' : C.dim })}>${formatW(bat.power)}</span>
+          <span class="sep"> · </span>
+          <span>${formatA(bat.current)}</span>
+          <span class="sep"> · </span>
+          <span>${formatV(bat.voltage)}</span>
+          <span class="sep"> · </span>
+          <span style=${styleMap({ color: bat.tempMax > 40 ? C.red : bat.tempMax > 35 ? C.orange : C.text })}>${formatTemp(bat.tempMax)}</span>
+          <span class="sep"> · </span>
+          <span style=${styleMap({ color: deltaColor })}>Δ${bat.cellDelta != null ? formatMv(bat.cellDelta) : '—'}</span>
+          ${trend ? html`<span class="sep"> · </span><span style=${styleMap({ color: trendColor })}>${trend} ${trendArrow}</span>` : nothing}
         </div>
-
-        <!-- Trend -->
-        ${showTrend ? html`
-          <div class="trend-row">
-            <span class="${trendClass}">${trend ?? '—'}</span>
-            ${bat.batCycleIndex != null ? html`<span class="cycle-count">· ${bat.batCycleIndex}×</span>` : nothing}
-            ${bat.isBalancing ? html`<span class="bal-icon">⚡</span>` : nothing}
-          </div>
-        ` : nothing}
 
         <!-- Cells -->
         ${allMv.length > 0 ? html`
           <div class="cells-header">
-            <span>
-              ${formatMv(Math.min(...allMv))} – ${formatMv(Math.max(...allMv))} · avg ${formatMv(avg)}
-            </span>
+            <span>${formatMv(Math.min(...allMv))} – ${formatMv(Math.max(...allMv))} · avg ${formatMv(avg)}</span>
             <span style="color:${deltaColor}">Δ ${bat.cellDelta != null ? formatMv(bat.cellDelta) : '—'}</span>
           </div>
           <div class="cells-grid" style="position:relative">
@@ -434,10 +408,11 @@ export class FelicityFleetCard extends LitElement {
           </div>
         ` : nothing}
 
-        <!-- Footer -->
+        <!-- Compact footer -->
         <div class="bat-footer">
           <span>${bat.model}</span>
-          <span>${formatDbm(bat.wifiSignal)}</span>
+          <span>WiFi ${wifiBar(bat.wifiSignal)} (${bat.wifiSignal} dBm)</span>
+          <span>${bat.soh}% SOH${bat.batCycleIndex != null ? ` · ${bat.batCycleIndex}×` : ''}</span>
         </div>
       </div>
     `;
