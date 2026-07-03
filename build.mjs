@@ -6,7 +6,7 @@ const minify = process.argv.includes('--minify');
 const ctx = await esbuild.context({
   entryPoints: ['src/index.ts'],
   bundle: true,
-  outfile: 'felicity-battery-cards.js',
+  outfile: 'ha-fsolar.js',
   format: 'esm',
   minify,
   sourcemap: !minify,

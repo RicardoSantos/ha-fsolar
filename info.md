@@ -2,11 +2,11 @@
 
 Real-time Lovelace dashboard cards for **Felicity Solar** battery systems, powered by [mcp-fsolar](https://github.com/RicardoSantos/mcp-fsolar).
 
-![Fleet card — charging](https://raw.githubusercontent.com/RicardoSantos/ha-fsolar/main/docs/images/fleet_blue.jpg)
+![Fleet card — charging](docs/images/fleet_blue.jpg)
 
-![Fleet card — discharging](https://raw.githubusercontent.com/RicardoSantos/ha-fsolar/main/docs/images/fleet_discharging.jpg)
+![Fleet card — discharging](docs/images/fleet_discharging.jpg)
 
-![History card](https://raw.githubusercontent.com/RicardoSantos/ha-fsolar/main/docs/images/fleet_daily.jpg)
+![History card](docs/images/fleet_daily.jpg)
 
 ## Cards
 
