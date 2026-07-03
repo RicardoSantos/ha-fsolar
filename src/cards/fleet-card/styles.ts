@@ -78,8 +78,8 @@ export const fleetStyles = css`
 
   /* ── Battery grid ── */
   .batteries {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 12px;
     padding: 12px;
   }
@@ -90,8 +90,7 @@ export const fleetStyles = css`
     border: 1px solid #30363d;
     border-radius: 8px;
     padding: 12px;
-    min-width: 240px;
-    flex: 1 1 240px;
+    min-width: 0;
   }
   .battery-card.charging { border-color: #00ff8840; }
   .battery-card.discharging { border-color: #ffd70040; }
