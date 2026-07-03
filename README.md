@@ -45,7 +45,7 @@ Live fleet overview showing all your batteries at a glance:
 
 ## Requirements
 
-- [mcp-fsolar](https://github.com/RicardoSantos/mcp-fsolar) **v1.0.0+** running and reachable from Home Assistant
+- [mcp-fsolar](https://github.com/RicardoSantos/mcp-fsolar) **v1.0.37+** running and reachable from Home Assistant
 - Home Assistant **2023.1+**
 - HACS **1.6+**
 
