@@ -95,12 +95,9 @@ export class FelicityFleetCard extends LitElement {
   private async _fetchAll() {
     if (!this._api) return;
     try {
-      const [batteries, health] = await Promise.all([
-        this._api.batteries(),
-        this._api.health(),
-      ]);
-      this._batteries = batteries;
-      this._health = health;
+      const result = await this._api.batteries();
+      this._batteries = result.batteries;
+      this._health = this._deriveHealth(result.batteries, result.trend ?? {});
       this._loading = false;
       this._error = null;
       this._stale = Date.now() - this._lastFetch > 120_000 && this._lastFetch > 0;
@@ -115,6 +112,22 @@ export class FelicityFleetCard extends LitElement {
       this._loading = false;
       if (this._lastFetch > 0) this._stale = true;
     }
+  }
+
+  private _deriveHealth(batteries: Battery[], trend: Record<string, { direction: string; deltaChange: number; history: number[]; balancingCount: number }>): HealthResponse {
+    const health: HealthResponse = {};
+    for (const bat of batteries) {
+      const delta = bat.cellDelta ?? 0;
+      const t = trend[bat.sn];
+      health[bat.sn] = {
+        soc: bat.soc,
+        socStatus: bat.soc < 10 ? 'bad' : bat.soc < 20 ? 'warn' : 'good',
+        cellDeltaStatus: delta > 50 ? 'bad' : delta > 20 ? 'warn' : 'good',
+        outliers: [],
+        trend: t?.direction ?? null,
+      };
+    }
+    return health;
   }
 
   private _retry() {
