@@ -3,6 +3,5 @@
   "filename": "felicity-battery-cards.js",
   "content_in_root": true,
   "render_readme": true,
-  "homeassistant": "2023.1.0",
-  "iot_class": "local_polling"
+  "homeassistant": "2023.1.0"
 }
