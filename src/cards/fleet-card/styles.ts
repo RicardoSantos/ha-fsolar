@@ -97,30 +97,27 @@ export const fleetStyles = css`
   .battery-card.discharging { border-color: #ffd70040; }
   .battery-card.warn { border-color: #ff8c0060; }
 
-  /* ── Battery header (compact single line) ── */
+  /* ── Battery header ── */
   .bat-header {
     display: flex;
     align-items: center;
-    gap: 4px;
-    margin-bottom: 5px;
-    flex-wrap: nowrap;
-    overflow: hidden;
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
   }
   .bat-alias {
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: #00bcd4;
-    margin-right: 2px;
-    white-space: nowrap;
+    margin-right: auto;
   }
   .state-badge {
-    font-size: 0.58rem;
+    font-size: 0.6rem;
     font-weight: 700;
-    padding: 1px 4px;
+    padding: 2px 5px;
     border-radius: 3px;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
+    letter-spacing: 0.05em;
   }
   .badge-chg  { background: #00ff8822; color: #00ff88; border: 1px solid #00ff8844; }
   .badge-dchg { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70044; }
@@ -129,68 +126,99 @@ export const fleetStyles = css`
   .badge-health-good { background: #00ff8822; color: #00ff88; border: 1px solid #00ff8844; }
   .badge-health-warn { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70044; }
   .badge-health-bad  { background: #ff444422; color: #ff4444; border: 1px solid #ff444444; }
-  .soc-inline {
-    font-size: 1.3rem;
-    font-weight: 700;
-    font-family: 'Courier New', monospace;
-    margin-left: auto;
-    white-space: nowrap;
-  }
-  .soc-kwh-inline {
-    font-size: 0.72rem;
-    color: #7a8491;
-    font-family: 'Courier New', monospace;
-    white-space: nowrap;
-  }
 
-  /* ── SOC bar row (bar + time inline) ── */
-  .soc-bar-row {
+  /* ── SOC row ── */
+  .soc-row {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    align-items: baseline;
+    justify-content: space-between;
     margin-bottom: 4px;
   }
+  .soc-pct {
+    font-size: 2.8rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    line-height: 1;
+  }
+  .soc-kwh {
+    font-size: 0.85rem;
+    color: #7a8491;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* ── Progress bar ── */
   .soc-bar-track {
-    flex: 1;
     height: 4px;
     background: #30363d;
     border-radius: 2px;
     overflow: hidden;
-    min-width: 0;
+    margin-bottom: 4px;
   }
   .soc-bar-fill {
     height: 100%;
     border-radius: 2px;
     transition: width 0.4s ease;
   }
+
+  /* ── Time estimate ── */
   .time-est {
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     color: #7a8491;
+    margin-bottom: 8px;
     font-family: 'Courier New', monospace;
-    white-space: nowrap;
-    flex-shrink: 0;
   }
   .time-est strong { color: #c9d1d9; }
   .time-est .eta { color: #00bcd4; }
 
-  /* ── Stats single line ── */
-  .stats-line {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    font-size: 0.72rem;
+  /* ── Stats row ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .stat {
+    background: #0d1117;
+    border-radius: 4px;
+    padding: 4px 6px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #555e6b;
+    display: block;
+    margin-bottom: 1px;
+  }
+  .stat-value {
+    font-size: 0.78rem;
     font-family: 'Courier New', monospace;
     color: #c9d1d9;
-    margin-bottom: 6px;
-    gap: 0;
+    font-weight: 600;
   }
-  .stats-line .sep { color: #555e6b; }
+
+  /* ── Trend ── */
+  .trend-row {
+    font-size: 0.72rem;
+    color: #7a8491;
+    margin-bottom: 8px;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .trend-improving { color: #00ff88; }
+  .trend-worsening { color: #ff4444; }
+  .trend-stable    { color: #ffd700; }
+  .cycle-count { color: #7a8491; }
+  .bal-icon { color: #ffd700; }
 
   /* ── Cells section ── */
   .cells-header {
-    font-size: 0.62rem;
+    font-size: 0.68rem;
     color: #7a8491;
-    margin-bottom: 3px;
+    margin-bottom: 6px;
     font-family: 'Courier New', monospace;
     display: flex;
     justify-content: space-between;
@@ -215,7 +243,7 @@ export const fleetStyles = css`
     font-family: 'Courier New', monospace;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
-    height: 16px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -224,7 +252,7 @@ export const fleetStyles = css`
   .cell-col:hover .cell-mv-label { color: #c9d1d9; }
   .cell-bar {
     width: 100%;
-    min-height: 16px;
+    min-height: 32px;
     border-radius: 2px 2px 0 0;
     transition: opacity 0.2s, filter 0.2s;
     position: relative;
@@ -306,14 +334,11 @@ export const fleetStyles = css`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 6px;
-    padding-top: 4px;
+    margin-top: 8px;
+    padding-top: 6px;
     border-top: 1px solid #30363d;
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     color: #555e6b;
-    font-family: 'Courier New', monospace;
   }
 
   /* ── Loading / Error ── */
