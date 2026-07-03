@@ -1,0 +1,29 @@
+{
+  "name": "ha-fsolar",
+  "version": "1.0.0",
+  "description": "Home Assistant Lovelace cards for Felicity Solar battery fleet monitoring",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:min": "node build.mjs --minify",
+    "dev": "node build.mjs --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.21.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "apexcharts": "^3.49.0",
+    "lit": "^3.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RicardoSantos/ha-fsolar.git"
+  },
+  "homepage": "https://github.com/RicardoSantos/ha-fsolar#readme",
+  "bugs": {
+    "url": "https://github.com/RicardoSantos/ha-fsolar/issues"
+  },
+  "license": "MIT"
+}

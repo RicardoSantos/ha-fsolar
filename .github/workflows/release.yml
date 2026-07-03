@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    name: Build & publish release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (minified)
+        run: node build.mjs --minify
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/felicity-battery-cards.js
+          generate_release_notes: true
+          body: |
+            ## Install via HACS
+
+            1. Add this repository as a custom HACS repository (Frontend category)
+            2. Install **Felicity Battery Cards**
+            3. Add the cards to your Lovelace dashboard
+
+            ## Manual install
+
+            Download `felicity-battery-cards.js` and place it in your HA `config/www/` folder.
+            Then add to your Lovelace resources:
+            ```yaml
+            resources:
+              - url: /local/felicity-battery-cards.js
+                type: module
+            ```
