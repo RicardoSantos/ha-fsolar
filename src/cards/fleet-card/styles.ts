@@ -97,27 +97,30 @@ export const fleetStyles = css`
   .battery-card.discharging { border-color: #ffd70040; }
   .battery-card.warn { border-color: #ff8c0060; }
 
-  /* ── Battery header ── */
+  /* ── Battery header (compact single line) ── */
   .bat-header {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 5px;
+    flex-wrap: nowrap;
+    overflow: hidden;
   }
   .bat-alias {
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #00bcd4;
-    margin-right: auto;
+    margin-right: 2px;
+    white-space: nowrap;
   }
   .state-badge {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     font-weight: 700;
-    padding: 2px 5px;
+    padding: 1px 4px;
     border-radius: 3px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
   }
   .badge-chg  { background: #00ff8822; color: #00ff88; border: 1px solid #00ff8844; }
   .badge-dchg { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70044; }
@@ -126,99 +129,68 @@ export const fleetStyles = css`
   .badge-health-good { background: #00ff8822; color: #00ff88; border: 1px solid #00ff8844; }
   .badge-health-warn { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70044; }
   .badge-health-bad  { background: #ff444422; color: #ff4444; border: 1px solid #ff444444; }
-
-  /* ── SOC row ── */
-  .soc-row {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 4px;
-  }
-  .soc-pct {
-    font-size: 2.8rem;
+  .soc-inline {
+    font-size: 1.3rem;
     font-weight: 700;
     font-family: 'Courier New', monospace;
-    line-height: 1;
+    margin-left: auto;
+    white-space: nowrap;
   }
-  .soc-kwh {
-    font-size: 0.85rem;
+  .soc-kwh-inline {
+    font-size: 0.72rem;
     color: #7a8491;
     font-family: 'Courier New', monospace;
+    white-space: nowrap;
   }
 
-  /* ── Progress bar ── */
+  /* ── SOC bar row (bar + time inline) ── */
+  .soc-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
   .soc-bar-track {
+    flex: 1;
     height: 4px;
     background: #30363d;
     border-radius: 2px;
     overflow: hidden;
-    margin-bottom: 4px;
+    min-width: 0;
   }
   .soc-bar-fill {
     height: 100%;
     border-radius: 2px;
     transition: width 0.4s ease;
   }
-
-  /* ── Time estimate ── */
   .time-est {
-    font-size: 0.72rem;
+    font-size: 0.65rem;
     color: #7a8491;
-    margin-bottom: 8px;
     font-family: 'Courier New', monospace;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .time-est strong { color: #c9d1d9; }
   .time-est .eta { color: #00bcd4; }
 
-  /* ── Stats row ── */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    margin-bottom: 8px;
-  }
-  .stat {
-    background: #0d1117;
-    border-radius: 4px;
-    padding: 4px 6px;
-    text-align: center;
-  }
-  .stat-label {
-    font-size: 0.58rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #555e6b;
-    display: block;
-    margin-bottom: 1px;
-  }
-  .stat-value {
-    font-size: 0.78rem;
-    font-family: 'Courier New', monospace;
-    color: #c9d1d9;
-    font-weight: 600;
-  }
-
-  /* ── Trend ── */
-  .trend-row {
-    font-size: 0.72rem;
-    color: #7a8491;
-    margin-bottom: 8px;
-    font-family: 'Courier New', monospace;
+  /* ── Stats single line ── */
+  .stats-line {
     display: flex;
     align-items: center;
-    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+    font-family: 'Courier New', monospace;
+    color: #c9d1d9;
+    margin-bottom: 6px;
+    gap: 0;
   }
-  .trend-improving { color: #00ff88; }
-  .trend-worsening { color: #ff4444; }
-  .trend-stable    { color: #ffd700; }
-  .cycle-count { color: #7a8491; }
-  .bal-icon { color: #ffd700; }
+  .stats-line .sep { color: #555e6b; }
 
   /* ── Cells section ── */
   .cells-header {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
     color: #7a8491;
-    margin-bottom: 6px;
+    margin-bottom: 3px;
     font-family: 'Courier New', monospace;
     display: flex;
     justify-content: space-between;
@@ -243,7 +215,7 @@ export const fleetStyles = css`
     font-family: 'Courier New', monospace;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
-    height: 28px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -252,7 +224,7 @@ export const fleetStyles = css`
   .cell-col:hover .cell-mv-label { color: #c9d1d9; }
   .cell-bar {
     width: 100%;
-    min-height: 32px;
+    min-height: 16px;
     border-radius: 2px 2px 0 0;
     transition: opacity 0.2s, filter 0.2s;
     position: relative;
@@ -334,11 +306,14 @@ export const fleetStyles = css`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 8px;
-    padding-top: 6px;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+    padding-top: 4px;
     border-top: 1px solid #30363d;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: #555e6b;
+    font-family: 'Courier New', monospace;
   }
 
   /* ── Loading / Error ── */
