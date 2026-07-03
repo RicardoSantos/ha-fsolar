@@ -129,8 +129,8 @@ export class FsolarApi {
     return r.json() as Promise<T>;
   }
 
-  async batteries(): Promise<Battery[]> {
-    return this.fetch<Battery[]>('/batteries');
+  async batteries(): Promise<{ batteries: Battery[]; trend: Record<string, { direction: string; deltaChange: number; history: number[]; balancingCount: number }> }> {
+    return this.fetch('/batteries');
   }
 
   async health(): Promise<HealthResponse> {
