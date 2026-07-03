@@ -2,3 +2,4 @@ node_modules/
 dist/
 *.js.map
 .DS_Store
+# keep felicity-battery-cards.js out of ignore so HACS can find it in the root

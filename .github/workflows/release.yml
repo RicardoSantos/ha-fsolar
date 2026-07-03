@@ -28,7 +28,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/felicity-battery-cards.js
+          files: felicity-battery-cards.js
           generate_release_notes: true
           body: |
             ## Install via HACS
