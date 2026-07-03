@@ -28,7 +28,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: felicity-battery-cards.js
+          files: ha-fsolar.js
           generate_release_notes: true
           body: |
             ## Install via HACS
@@ -39,10 +39,10 @@ jobs:
 
             ## Manual install
 
-            Download `felicity-battery-cards.js` and place it in your HA `config/www/` folder.
+            Download `ha-fsolar.js` and place it in your HA `config/www/` folder.
             Then add to your Lovelace resources:
             ```yaml
             resources:
-              - url: /local/felicity-battery-cards.js
+              - url: /local/ha-fsolar.js
                 type: module
             ```
