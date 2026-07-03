@@ -5,7 +5,7 @@
 
 Real-time Lovelace dashboard cards for **Felicity Solar** battery systems, powered by [mcp-fsolar](https://github.com/RicardoSantos/mcp-fsolar).
 
-![Fleet card — charging](docs/images/fleet_blue.jpg)
+![Fleet card — charging](https://raw.githubusercontent.com/RicardoSantos/ha-fsolar/main/docs/images/fleet_blue.jpg)
 
 ---
 
@@ -29,7 +29,7 @@ Live fleet overview showing all your batteries at a glance:
 - **Charging state badges**: CHG / DCHG / IDLE / BAL
 - Live updates via **SSE** (push) or polling
 
-![Fleet card — discharging](docs/images/fleet_discharging.jpg)
+![Fleet card — discharging](https://raw.githubusercontent.com/RicardoSantos/ha-fsolar/main/docs/images/fleet_discharging.jpg)
 
 ### 📊 Felicity Battery History
 
@@ -39,7 +39,7 @@ Live fleet overview showing all your batteries at a glance:
 - **DAILY tab**: Max cell delta and temperature charts per day
 - **LIFETIME tab**: Cycle count, SOH, full charge count, under-voltage events
 
-![History card](docs/images/fleet_daily.jpg)
+![History card](https://raw.githubusercontent.com/RicardoSantos/ha-fsolar/main/docs/images/fleet_daily.jpg)
 
 ---
 
