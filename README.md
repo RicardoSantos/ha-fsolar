@@ -63,12 +63,12 @@ Live fleet overview showing all your batteries at a glance:
 
 ### Manual
 
-1. Download `felicity-battery-cards.js` from the [latest release](https://github.com/RicardoSantos/ha-fsolar/releases/latest)
-2. Copy to `config/www/felicity-battery-cards.js`
+1. Download `ha-fsolar.js` from the [latest release](https://github.com/RicardoSantos/ha-fsolar/releases/latest)
+2. Copy to `config/www/ha-fsolar.js`
 3. Add to Lovelace resources:
    ```yaml
    resources:
-     - url: /local/felicity-battery-cards.js
+     - url: /local/ha-fsolar.js
        type: module
    ```
 

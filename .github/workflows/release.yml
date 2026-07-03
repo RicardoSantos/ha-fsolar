@@ -33,7 +33,7 @@ jobs:
           body: |
             ## Install via HACS
 
-            1. Add this repository as a custom HACS repository (Frontend category)
+            1. Add this repository as a custom HACS repository (Dashboard category)
             2. Install **Felicity Battery Cards**
             3. Add the cards to your Lovelace dashboard
 

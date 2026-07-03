@@ -1,0 +1,87 @@
+name: Bug report
+description: Report a bug in Felicity Battery Cards
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before reporting, please check [existing issues](https://github.com/RicardoSantos/ha-fsolar/issues) and make sure mcp-fsolar is running and reachable from Home Assistant.
+
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "e.g. 2024.6.3"
+    validations:
+      required: true
+
+  - type: input
+    id: hacs_version
+    attributes:
+      label: HACS version
+      placeholder: "e.g. 2.0.1"
+    validations:
+      required: true
+
+  - type: input
+    id: card_version
+    attributes:
+      label: Felicity Battery Cards version
+      placeholder: "e.g. 1.0.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: card
+    attributes:
+      label: Which card?
+      options:
+        - felicity-fleet-card
+        - felicity-history-card
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly. Include what you did, what you saw, and how often it occurs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Card YAML config
+      description: Paste your card configuration (remove sensitive values like api_key).
+      placeholder: |
+        type: custom:felicity-fleet-card
+        url: http://192.168.1.x:3010
+      render: yaml
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Browser console errors
+      description: Open DevTools (F12) → Console tab, reproduce the issue, paste any errors here.
+      render: text
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: mcp-fsolar is running and reachable from Home Assistant
+          required: true
+        - label: I cleared the browser cache after updating the cards
+          required: true
+        - label: I searched existing issues and this has not been reported before
+          required: true
