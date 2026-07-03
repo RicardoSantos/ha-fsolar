@@ -55,9 +55,9 @@ Live fleet overview showing all your batteries at a glance:
 
 ### Via HACS (recommended)
 
-1. Open HACS → Frontend
+1. Open HACS → Dashboard
 2. Click the ⋮ menu → **Custom repositories**
-3. Add `https://github.com/RicardoSantos/ha-fsolar` with category **Frontend**
+3. Add `https://github.com/RicardoSantos/ha-fsolar` with category **Dashboard**
 4. Find **Felicity Battery Cards** and install
 5. Clear browser cache and reload
 
