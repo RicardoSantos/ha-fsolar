@@ -60,7 +60,7 @@ representative at an online or offline event.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the community leaders responsible for enforcement at
-su.balsas.santos@gmail.com.
+ricardo.santos@users.noreply.github.com.
 
 All complaints will be reviewed and investigated promptly and fairly.
 

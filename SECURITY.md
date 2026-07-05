@@ -13,7 +13,7 @@ Only the latest release receives security fixes. Please update before reporting.
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Email **su.balsas.santos@gmail.com** with:
+Use [GitHub Security Advisories](https://github.com/RicardoSantos/ha-fsolar/security/advisories/new) to report privately, including:
 
 - A description of the vulnerability
 - Steps to reproduce
