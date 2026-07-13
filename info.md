@@ -22,13 +22,12 @@ Live fleet overview with per-battery panels showing:
 
 ### 📊 Felicity History Card
 
-24-hour trend analysis:
-- Cell Δ (mV) line chart with threshold annotations
-- Max temperature chart per battery
-- Cell deviation heatmap (16 cells × N batteries)
-- Daily and lifetime tabs
+24-hour and daily trend analysis:
+- **RECENT**: Cell Δ (mV) line chart + Max Temp chart + cell deviation heatmap (16 cells × N batteries)
+- **DAILY**: Pack voltage range (avg cell mV low→high per day) + Max Cell Δ bar chart
+- **LIFETIME**: Cycle count, SOH, full charges, under-voltage events
 
 ## Requirements
 
-- [mcp-fsolar](https://github.com/RicardoSantos/mcp-fsolar) running and reachable from HA
+- [mcp-fsolar](https://github.com/RicardoSantos/mcp-fsolar) **v1.0.42+** running and reachable from HA
 - Home Assistant 2023.1+

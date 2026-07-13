@@ -7,6 +7,21 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.7] — 2026-07-13
+
+### Changed
+- **Fleet card — balancing indicator**: trend row now shows `X% ⚡` only when the balancing flag was active in fewer than 90% of snapshots. Hides completely when always-on (Felicity batteries keep bit 6 permanently set — it is not meaningful as a trend signal)
+- **History card — DAILY tab**: replaced the old pre-aggregated `DailySnapshot` format (socMin/Max, cellDeltaMax) with the new raw 2-entries-per-day format from mcp-fsolar v1.0.42
+  - New chart 1: **Pack Voltage Range** — ApexCharts `rangeBar` showing avg cell mV at the day's lowest and highest pack voltage
+  - New chart 2: **Max Cell Δ** — max cell delta across both daily entries
+  - Tab count corrected: now shows unique days instead of raw entry count (was 2× the days)
+- **History card — `_batteries` fix**: was incorrectly assigning the whole `/batteries` response object instead of `.batteries`
+
+### Requires
+- mcp-fsolar **v1.0.42+** (DailySnapshotStore stores 2 real min+max snapshots per day)
+
+---
+
 ## [1.0.1] — 2026-06-28
 
 ### Fixed

@@ -25,7 +25,7 @@ Live fleet overview showing all your batteries at a glance:
 - **Cell tooltip**: LiFePO₄ %, pack spread, module temp, delta vs average
 - **Module temperature** grid (M1–M4)
 - **Stats row**: Power, Current, Voltage, Temp, SOH, Cell Δ
-- **Trend row**: delta trajectory + cycle count + balancing indicator
+- **Trend row**: delta trajectory + cycle count + balancing % (shown only when <90% of snapshots have balancing active — hides the permanent Felicity bit-6 flag)
 - **Charging state badges**: CHG / DCHG / IDLE / BAL
 - Live updates via **SSE** (push) or polling
 
@@ -36,7 +36,7 @@ Live fleet overview showing all your batteries at a glance:
 24-hour and daily trend analysis:
 
 - **RECENT tab**: Cell Δ line chart + Max Temp chart + cell deviation heatmap
-- **DAILY tab**: Max cell delta and temperature charts per day
+- **DAILY tab**: Pack voltage range bar chart (avg cell mV low→high per day) + Max Cell Δ bar chart; requires mcp-fsolar v1.0.42+
 - **LIFETIME tab**: Cycle count, SOH, full charge count, under-voltage events
 
 ![History card](https://raw.githubusercontent.com/RicardoSantos/ha-fsolar/main/docs/images/fleet_daily.jpg)
@@ -45,7 +45,7 @@ Live fleet overview showing all your batteries at a glance:
 
 ## Requirements
 
-- [mcp-fsolar](https://github.com/RicardoSantos/mcp-fsolar) **v1.0.37+** running and reachable from Home Assistant
+- [mcp-fsolar](https://github.com/RicardoSantos/mcp-fsolar) **v1.0.42+** running and reachable from Home Assistant
 - Home Assistant **2023.1+**
 - HACS **1.6+**
 
