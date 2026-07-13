@@ -42,6 +42,15 @@ export interface Battery {
   isBalancing: boolean;
 }
 
+export interface TrendEntry {
+  direction:              string;
+  deltaChange:            number;
+  history:                number[];
+  balancingCount:         number;
+  snapshotCount:          number;
+  currentBalancingStreak: number;
+}
+
 export interface HealthEntry {
   soc: number;
   socStatus: string;
@@ -87,24 +96,38 @@ export interface SnapshotsResponse {
   snapshots: Snapshot[];
 }
 
-export interface DailySnapshot {
-  date: string;
-  batteries: {
-    sn: string;
-    alias: string;
-    socMin: number;
-    socMax: number;
-    cellDeltaAvg: number | null;
-    cellDeltaMax: number | null;
-    tempMax: number;
-    chargeKwh: number;
-    dischargeKwh: number;
-    cycles: number;
-  }[];
+/** One battery entry in a daily raw snapshot (same shape as intraday SnapshotEntry). */
+export interface DailyRawEntry {
+  sn:            string;
+  alias:         string;
+  soc:           number;
+  soh:           number;
+  power:         number;
+  cellDelta:     number | null;
+  cellMin:       number | null;
+  cellMax:       number | null;
+  voltages:      number[];
+  temps:         number[];
+  tempMax:       number | null;
+  tempMin:       number | null;
+  warningCount:  number;
+  batCycleIndex: number | null;
+  isBalancing:   boolean;
+}
+
+/**
+ * Raw daily snapshot from /snapshots/daily.
+ * DailySnapshotStore stores 2 per day:
+ *   ts ending T11:59:59Z = snapshot with lowest pack total voltage (day's low)
+ *   ts ending T12:00:01Z = snapshot with highest pack total voltage (day's high)
+ */
+export interface DailyRawSnapshot {
+  ts:        string;
+  batteries: DailyRawEntry[];
 }
 
 export interface DailySnapshotsResponse {
-  snapshots: DailySnapshot[];
+  snapshots: DailyRawSnapshot[];
 }
 
 export class FsolarApi {
@@ -129,7 +152,7 @@ export class FsolarApi {
     return r.json() as Promise<T>;
   }
 
-  async batteries(): Promise<{ batteries: Battery[]; trend: Record<string, { direction: string; deltaChange: number; history: number[]; balancingCount: number }> }> {
+  async batteries(): Promise<{ batteries: Battery[]; trend: Record<string, TrendEntry> }> {
     return this.fetch('/batteries');
   }
 

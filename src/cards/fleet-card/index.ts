@@ -3,7 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import type { FleetCardConfig } from './types';
 import { fleetStyles } from './styles';
-import { FsolarApi, type Battery, type HealthResponse, type HealthEntry } from '../../shared/api';
+import { FsolarApi, type Battery, type HealthResponse, type HealthEntry, type TrendEntry } from '../../shared/api';
 import { C, C_BLUE, cellColour, deltaColour, socColour } from '../../shared/colours';
 import { formatW, formatA, formatV, formatMv, formatKwh, formatTimeRemaining, formatEta, formatTemp, formatDbm } from '../../shared/formatters';
 import { voltageToSocPct } from '../../shared/lifepo4';
@@ -22,6 +22,7 @@ export class FelicityFleetCard extends LitElement {
   @state() private _config: FleetCardConfig | null = null;
   @state() private _batteries: Battery[] = [];
   @state() private _health: HealthResponse = {};
+  @state() private _trend: Record<string, TrendEntry> = {};
   @state() private _loading = true;
   @state() private _error: string | null = null;
   @state() private _stale = false;
@@ -97,6 +98,7 @@ export class FelicityFleetCard extends LitElement {
     try {
       const result = await this._api.batteries();
       this._batteries = result.batteries;
+      this._trend = result.trend ?? {};
       this._health = this._deriveHealth(result.batteries, result.trend ?? {});
       this._loading = false;
       this._error = null;
@@ -114,7 +116,7 @@ export class FelicityFleetCard extends LitElement {
     }
   }
 
-  private _deriveHealth(batteries: Battery[], trend: Record<string, { direction: string; deltaChange: number; history: number[]; balancingCount: number }>): HealthResponse {
+  private _deriveHealth(batteries: Battery[], trend: Record<string, TrendEntry>): HealthResponse {
     const health: HealthResponse = {};
     for (const bat of batteries) {
       const delta = bat.cellDelta ?? 0;
@@ -297,6 +299,13 @@ export class FelicityFleetCard extends LitElement {
       : trend?.includes('worsening') ? 'trend-worsening'
         : 'trend-stable';
 
+    const batTrend = this._trend[bat.sn];
+    const balPct = batTrend && batTrend.snapshotCount > 0
+      ? batTrend.balancingCount / batTrend.snapshotCount
+      : null;
+    // Hide when ≥90% (permanent flag on Felicity batteries, not meaningful)
+    const showBalPct = balPct !== null && balPct > 0 && balPct < 0.9;
+
     const showModuleTemps = this._config?.show_module_temps !== false;
     const showTrend = this._config?.show_trend !== false;
 
@@ -379,7 +388,7 @@ export class FelicityFleetCard extends LitElement {
           <div class="trend-row">
             <span class="${trendClass}">${trend ?? '—'}</span>
             ${bat.batCycleIndex != null ? html`<span class="cycle-count">· ${bat.batCycleIndex}×</span>` : nothing}
-            ${bat.isBalancing ? html`<span class="bal-icon">⚡</span>` : nothing}
+            ${showBalPct ? html`<span class="bal-icon">· ${Math.round(balPct! * 100)}% ⚡</span>` : nothing}
           </div>
         ` : nothing}
 

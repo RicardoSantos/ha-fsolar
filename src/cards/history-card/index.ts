@@ -4,7 +4,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import ApexCharts from 'apexcharts';
 import type { HistoryCardConfig } from './types';
 import { historyStyles } from './styles';
-import { FsolarApi, type Battery, type Snapshot, type DailySnapshot } from '../../shared/api';
+import { FsolarApi, type Battery, type Snapshot, type DailyRawSnapshot } from '../../shared/api';
 import { batteryColour } from '../../shared/colours';
 
 type Tab = 'recent' | 'daily' | 'lifetime';
@@ -20,7 +20,7 @@ export class FelicityHistoryCard extends LitElement {
 
   @state() private _batteries: Battery[] = [];
   @state() private _snapshots: Snapshot[] = [];
-  @state() private _dailySnapshots: DailySnapshot[] = [];
+  @state() private _dailySnapshots: DailyRawSnapshot[] = [];
 
   @query('#delta-chart')  private _deltaChartEl?: HTMLElement;
   @query('#temp-chart')   private _tempChartEl?: HTMLElement;
@@ -78,7 +78,7 @@ export class FelicityHistoryCard extends LitElement {
         this._api.snapshotsIntraday(),
         this._api.snapshotsDaily(),
       ]);
-      this._batteries = batteries;
+      this._batteries = batteries.batteries;
       this._snapshots = intradayRes.snapshots;
       this._dailySnapshots = dailyRes.snapshots;
       this._error = null;
@@ -176,17 +176,33 @@ export class FelicityHistoryCard extends LitElement {
     }
   }
 
+  /** Group daily raw snapshots by date; pair min-voltage and max-voltage entries. */
+  private _groupDailyByDate(): Map<string, { minSnap: DailyRawSnapshot; maxSnap: DailyRawSnapshot }> {
+    const byDate = new Map<string, DailyRawSnapshot[]>();
+    for (const snap of this._dailySnapshots) {
+      const date = snap.ts.slice(0, 10);
+      if (!byDate.has(date)) byDate.set(date, []);
+      byDate.get(date)!.push(snap);
+    }
+    const result = new Map<string, { minSnap: DailyRawSnapshot; maxSnap: DailyRawSnapshot }>();
+    for (const [date, snaps] of byDate) {
+      // T11:59:59 = min pack voltage, T12:00:01 = max pack voltage
+      const minSnap = snaps.find((s) => s.ts.includes('T11:59:59')) ?? snaps[0];
+      const maxSnap = snaps.find((s) => s.ts.includes('T12:00:01')) ?? snaps[snaps.length - 1];
+      result.set(date, { minSnap, maxSnap });
+    }
+    return result;
+  }
+
   private _renderDailyCharts() {
     if (!this._dailyDeltaChartEl || !this._dailyTempChartEl) return;
 
+    const grouped = this._groupDailyByDate();
+    const dates   = [...grouped.keys()].sort();
     const batAliases = [...new Set(this._dailySnapshots.flatMap((s) => s.batteries.map((b) => b.alias)))];
-    const timestamps = this._dailySnapshots.map((s) => new Date(s.date).getTime());
 
     const baseOpts: ApexCharts.ApexOptions = {
-      chart: {
-        type: 'bar', height: 160, background: '#161b22', toolbar: { show: false },
-        animations: { enabled: false },
-      },
+      chart: { background: '#161b22', toolbar: { show: false }, animations: { enabled: false } },
       dataLabels: { enabled: false },
       grid: { borderColor: '#30363d' },
       xaxis: { type: 'datetime', labels: { style: { colors: '#555e6b', fontSize: '0.6rem' } } },
@@ -195,35 +211,72 @@ export class FelicityHistoryCard extends LitElement {
       tooltip: { theme: 'dark' },
     };
 
-    const dailyDeltaSeries = batAliases.map((alias, i) => ({
+    // Pack voltage range (rangeBar): low = avg cell mV at day's low; high = avg cell mV at day's high
+    const rangeSeries = batAliases.map((alias, i) => ({
       name: alias,
       color: batteryColour(i),
-      data: this._dailySnapshots.map((s, si) => {
-        const bat = s.batteries.find((b) => b.alias === alias);
-        return [timestamps[si], bat?.cellDeltaMax ?? null];
-      }) as [number, number | null][],
+      data: dates.map((date) => {
+        const { minSnap, maxSnap } = grouped.get(date)!;
+        const minBat = minSnap.batteries.find((b) => b.alias === alias);
+        const maxBat = maxSnap.batteries.find((b) => b.alias === alias);
+        if (!minBat || !maxBat) return null;
+        const avgLow  = minBat.voltages.length
+          ? Math.round(minBat.voltages.reduce((a, v) => a + v, 0) / minBat.voltages.length)
+          : (minBat.cellMin ?? 0);
+        const avgHigh = maxBat.voltages.length
+          ? Math.round(maxBat.voltages.reduce((a, v) => a + v, 0) / maxBat.voltages.length)
+          : (maxBat.cellMax ?? 0);
+        return { x: new Date(date + 'T12:00:00Z').getTime(), y: [avgLow, avgHigh] };
+      }).filter((d): d is { x: number; y: [number, number] } => d !== null),
     }));
 
+    const rangeOpts: ApexCharts.ApexOptions = {
+      ...baseOpts,
+      chart: { ...baseOpts.chart, type: 'rangeBar', height: 160 },
+      plotOptions: { bar: { horizontal: false, columnWidth: '60%' } },
+      series: rangeSeries,
+      yaxis: {
+        ...baseOpts.yaxis,
+        title: { text: 'avg cell mV', style: { color: '#555e6b' } },
+        min: 3000, max: 3700,
+      },
+      tooltip: {
+        theme: 'dark',
+        y: { formatter: (val: number) => `${val} mV` },
+      },
+    };
+
     if (this._dailyDeltaChart) {
-      this._dailyDeltaChart.updateOptions({ ...baseOpts, series: dailyDeltaSeries }, true, false);
+      this._dailyDeltaChart.updateOptions(rangeOpts, true, false);
     } else {
-      this._dailyDeltaChart = new ApexCharts(this._dailyDeltaChartEl, { ...baseOpts, series: dailyDeltaSeries });
+      this._dailyDeltaChart = new ApexCharts(this._dailyDeltaChartEl, rangeOpts);
       this._dailyDeltaChart.render();
     }
 
-    const dailyTempSeries = batAliases.map((alias, i) => ({
+    // Max cell delta per day (bar): max across min and max entries
+    const deltaSeries = batAliases.map((alias, i) => ({
       name: alias,
       color: batteryColour(i),
-      data: this._dailySnapshots.map((s, si) => {
-        const bat = s.batteries.find((b) => b.alias === alias);
-        return [timestamps[si], bat?.tempMax ?? null];
+      data: dates.map((date) => {
+        const { minSnap, maxSnap } = grouped.get(date)!;
+        const minBat = minSnap.batteries.find((b) => b.alias === alias);
+        const maxBat = maxSnap.batteries.find((b) => b.alias === alias);
+        const delta = Math.max(minBat?.cellDelta ?? 0, maxBat?.cellDelta ?? 0);
+        return [new Date(date + 'T12:00:00Z').getTime(), delta || null];
       }) as [number, number | null][],
     }));
 
+    const deltaOpts: ApexCharts.ApexOptions = {
+      ...baseOpts,
+      chart: { ...baseOpts.chart, type: 'bar', height: 160 },
+      series: deltaSeries,
+      yaxis: { ...baseOpts.yaxis, title: { text: 'mV', style: { color: '#555e6b' } } },
+    };
+
     if (this._dailyTempChart) {
-      this._dailyTempChart.updateOptions({ ...baseOpts, series: dailyTempSeries }, true, false);
+      this._dailyTempChart.updateOptions(deltaOpts, true, false);
     } else {
-      this._dailyTempChart = new ApexCharts(this._dailyTempChartEl, { ...baseOpts, series: dailyTempSeries });
+      this._dailyTempChart = new ApexCharts(this._dailyTempChartEl, deltaOpts);
       this._dailyTempChart.render();
     }
   }
@@ -297,11 +350,11 @@ export class FelicityHistoryCard extends LitElement {
     return html`
       <div class="charts-row">
         <div class="chart-panel">
-          <div class="chart-title">Max Cell Δ (mV) · Daily</div>
+          <div class="chart-title">Pack Voltage Range (avg cell mV) · Daily</div>
           <div class="chart-container"><div id="daily-delta-chart"></div></div>
         </div>
         <div class="chart-panel">
-          <div class="chart-title">Max Temp (°C) · Daily</div>
+          <div class="chart-title">Max Cell Δ (mV) · Daily</div>
           <div class="chart-container"><div id="daily-temp-chart"></div></div>
         </div>
       </div>
@@ -389,7 +442,7 @@ export class FelicityHistoryCard extends LitElement {
           <div class="tab ${this._tab === 'daily' ? 'active' : ''}"
             @click=${() => { this._destroyCharts(); this._tab = 'daily'; }}>
             Daily
-            <span class="tab-count">${this._dailySnapshots.length}d</span>
+            <span class="tab-count">${new Set(this._dailySnapshots.map((s) => s.ts.slice(0, 10))).size}d</span>
           </div>
           <div class="tab ${this._tab === 'lifetime' ? 'active' : ''}"
             @click=${() => { this._tab = 'lifetime'; }}>
