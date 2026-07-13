@@ -1,6 +1,6 @@
 {
   "name": "ha-fsolar",
-  "version": "1.0.1",
+  "version": "1.0.7",
   "description": "Home Assistant Lovelace cards for Felicity Solar battery fleet monitoring",
   "type": "module",
   "scripts": {
