@@ -103,20 +103,124 @@ title: "📊 BATTERY HISTORY"
 
 ## mcp-fsolar setup
 
-The cards connect to [mcp-fsolar](https://github.com/RicardoSantos/mcp-fsolar) — a local Node.js server that reads your Felicity Solar batteries over WiFi and exposes a REST API.
+The cards connect to [mcp-fsolar](https://github.com/RicardoSantos/mcp-fsolar) — a local Node.js server that reads your Felicity Solar batteries over the Felicity cloud API and exposes a REST API on your local network.
 
-Quick start:
-```bash
-npx fsolar-mcp
-```
+### Prerequisites
 
-Or run persistently:
+- **Node.js 18+** on a machine that stays on (NAS, Raspberry Pi, server, or any always-on Linux/Windows/macOS host)
+- A **Felicity Solar cloud account** (the email and password you use in the Felicity app)
+
+### Install and run
+
 ```bash
 npm install -g fsolar-mcp
-FELICITY_HOST=192.168.1.x FORECAST_MODE=http fsolar-mcp
 ```
 
-See the [mcp-fsolar README](https://github.com/RicardoSantos/mcp-fsolar#readme) for full setup.
+Start the server with your credentials. Replace `your@email.com` and `yourpassword` with your Felicity account credentials, and set `FELICITY_CORS_ORIGIN` to your Home Assistant origin so the cards can reach the API from the browser:
+
+```bash
+FELICITY_USER=your@email.com \
+FELICITY_PASS=yourpassword \
+FELICITY_CORS_ORIGIN=http://homeassistant.local:8123 \
+fsolar-mcp
+```
+
+The server starts on port `3010` by default. Verify it's working:
+
+```bash
+curl http://localhost:3010/batteries
+```
+
+### Run persistently with systemd (Linux / NAS)
+
+Create `/etc/systemd/system/fsolar-mcp.service`:
+
+```ini
+[Unit]
+Description=fsolar-mcp battery REST API
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/npx fsolar-mcp
+Restart=always
+RestartSec=10
+Environment=FELICITY_USER=your@email.com
+Environment=FELICITY_PASS=yourpassword
+Environment=FELICITY_CORS_ORIGIN=http://homeassistant.local:8123
+Environment=SNAPSHOT_DIR=/var/lib/fsolar-mcp
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now fsolar-mcp
+```
+
+### Run with Docker
+
+```yaml
+# docker-compose.yml
+services:
+  fsolar-mcp:
+    image: node:20-alpine
+    command: npx fsolar-mcp
+    restart: unless-stopped
+    ports:
+      - "3010:3010"
+    environment:
+      FELICITY_USER: your@email.com
+      FELICITY_PASS: yourpassword
+      FELICITY_CORS_ORIGIN: http://homeassistant.local:8123
+      SNAPSHOT_DIR: /data
+    volumes:
+      - fsolar_data:/data
+
+volumes:
+  fsolar_data:
+```
+
+```bash
+docker compose up -d
+```
+
+### Optional: API key
+
+To restrict access to the server, set `FELICITY_API_KEY`. The cards support it via the `api_key` config option:
+
+```bash
+FELICITY_API_KEY=your-secret-key fsolar-mcp
+```
+
+```yaml
+type: custom:felicity-fleet-card
+url: http://192.168.1.x:3010
+api_key: your-secret-key
+```
+
+### Card URL
+
+In your Lovelace card configuration, set `url` to the mcp-fsolar server address **as seen from the Home Assistant frontend** (i.e. from the browser, not from the HA server itself):
+
+```yaml
+url: http://192.168.1.x:3010   # IP of the machine running fsolar-mcp
+```
+
+If the machine running mcp-fsolar is the same as your HA host, use its LAN IP — not `localhost` (the browser would resolve `localhost` as the browser machine, not the server).
+
+### Key environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `FELICITY_USER` | **required** | Felicity Solar account email |
+| `FELICITY_PASS` | **required** | Felicity Solar account password |
+| `FELICITY_PORT` | `3010` | HTTP server port |
+| `FELICITY_CORS_ORIGIN` | localhost only | Set to your HA origin (`http://homeassistant.local:8123`) so the cards work from the browser |
+| `FELICITY_API_KEY` | — | When set, all requests require `X-API-Key: <key>` |
+| `SNAPSHOT_DIR` | system temp | Directory for persistent snapshot JSON files — set to a permanent path so history survives restarts |
+| `FELICITY_DAILY_DAYS` | `90` | Daily snapshot retention (days) |
+
+See the [full mcp-fsolar README](https://github.com/RicardoSantos/mcp-fsolar#readme) for all options.
 
 ---
 
