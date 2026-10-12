@@ -61,6 +61,43 @@ export const fleetStyles = css`
   .soc-summary span { margin-right: 8px; }
   .soc-summary .soc-val { color: #00ff88; font-weight: 600; }
 
+  /* ── Alerts banner ── */
+  .alerts-banner {
+    border-bottom: 1px solid #30363d;
+  }
+  .alert-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 5px 16px;
+    font-size: 0.72rem;
+    border-bottom: 1px solid #ffffff08;
+  }
+  .alert-row:last-child { border-bottom: none; }
+  .alert-row strong { margin-right: 2px; }
+  .alert-icon { font-weight: 700; }
+  .alert-crit { background: #ff444411; color: #ff8888; }
+  .alert-crit strong, .alert-crit .alert-icon { color: #ff4444; }
+  .alert-warn { background: #ffd70011; color: #e6c200; }
+  .alert-warn strong, .alert-warn .alert-icon { color: #ffd700; }
+  .alert-info { background: #4fc3f711; color: #8fd4f7; }
+  .alert-info strong, .alert-info .alert-icon { color: #4fc3f7; }
+
+  /* ── Headroom row ── */
+  .headroom-row {
+    font-size: 0.72rem;
+    color: #c9d1d9;
+    margin-bottom: 8px;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .headroom-label {
+    color: #555e6b;
+    letter-spacing: 0.04em;
+  }
+
   /* ── Discharge banner ── */
   .discharge-banner {
     background: linear-gradient(90deg, #1a1000, #241800);

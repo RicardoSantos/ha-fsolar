@@ -59,6 +59,7 @@ export class FelicityHistoryCardEditor extends LitElement {
             <option value="recent">Recent (last 23h)</option>
             <option value="daily">Daily</option>
             <option value="lifetime">Lifetime</option>
+            <option value="energy">Energy</option>
           </select>
         </div>
 
@@ -67,6 +68,17 @@ export class FelicityHistoryCardEditor extends LitElement {
           <input type="text" .value=${this._config.title ?? ''}
             placeholder="📊 BATTERY HISTORY"
             @change=${(e: Event) => this._changed('title', (e.target as HTMLInputElement).value || undefined)} />
+        </div>
+
+        <div class="field">
+          <label>Tariff (€/kWh, optional)</label>
+          <input type="number" step="0.01" min="0" .value=${this._config.tariff != null ? String(this._config.tariff) : ''}
+            placeholder="uses server default"
+            @change=${(e: Event) => {
+              const v = (e.target as HTMLInputElement).value;
+              this._changed('tariff', v === '' ? undefined : Number(v));
+            }} />
+          <div class="hint">Used to estimate savings on the Energy tab. Leave empty to use the server's FELICITY_TARIFF_KWH.</div>
         </div>
       </div>
     `;

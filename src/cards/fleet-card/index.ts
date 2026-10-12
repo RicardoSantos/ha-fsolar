@@ -3,7 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import type { FleetCardConfig } from './types';
 import { fleetStyles } from './styles';
-import { FsolarApi, type Battery, type HealthResponse, type HealthEntry, type TrendEntry } from '../../shared/api';
+import { FsolarApi, type Battery, type HealthResponse, type HealthEntry, type TrendEntry, type Alert, type LimitHeadroomEntry } from '../../shared/api';
 import { C, C_BLUE, cellColour, deltaColour, socColour } from '../../shared/colours';
 import { formatW, formatA, formatV, formatMv, formatKwh, formatTimeRemaining, formatEta, formatTemp, formatDbm } from '../../shared/formatters';
 import { voltageToSocPct } from '../../shared/lifepo4';
@@ -23,6 +23,8 @@ export class FelicityFleetCard extends LitElement {
   @state() private _batteries: Battery[] = [];
   @state() private _health: HealthResponse = {};
   @state() private _trend: Record<string, TrendEntry> = {};
+  @state() private _alerts: Alert[] = [];
+  @state() private _headroom: Record<string, LimitHeadroomEntry> = {};
   @state() private _loading = true;
   @state() private _error: string | null = null;
   @state() private _stale = false;
@@ -35,7 +37,7 @@ export class FelicityFleetCard extends LitElement {
 
   setConfig(config: FleetCardConfig) {
     if (!config.url) throw new Error('url is required');
-    this._config = { mode: 'sse', poll_interval: 30, show_trend: true, show_module_temps: true, ...config };
+    this._config = { mode: 'sse', poll_interval: 30, show_trend: true, show_module_temps: true, show_alerts: true, show_headroom: true, ...config };
     this._api = new FsolarApi(config.url, config.api_key);
   }
 
@@ -113,6 +115,26 @@ export class FelicityFleetCard extends LitElement {
       }
       this._loading = false;
       if (this._lastFetch > 0) this._stale = true;
+      return;
+    }
+    this._fetchExtras();
+  }
+
+  // Alerts/headroom are nice-to-have overlays — fetched separately so an older
+  // mcp-fsolar instance without these routes (pre-1.3.x) still shows the core pack view.
+  private async _fetchExtras() {
+    if (!this._api) return;
+    if (this._config?.show_alerts !== false) {
+      try {
+        const res = await this._api.alerts();
+        this._alerts = res.alerts;
+      } catch { /* endpoint missing or unreachable — keep last known alerts */ }
+    }
+    if (this._config?.show_headroom !== false) {
+      try {
+        const res = await this._api.limitHeadroom();
+        this._headroom = Object.fromEntries(res.batteries.map((h) => [h.sn, h]));
+      } catch { /* endpoint missing or unreachable — keep last known headroom */ }
     }
   }
 
@@ -383,6 +405,9 @@ export class FelicityFleetCard extends LitElement {
           </div>
         </div>
 
+        <!-- Headroom -->
+        ${this._renderHeadroomRow(bat)}
+
         <!-- Trend -->
         ${showTrend ? html`
           <div class="trend-row">
@@ -459,6 +484,52 @@ export class FelicityFleetCard extends LitElement {
     return html`<span class="state-badge badge-health-${worst}">
       ${worst === 'good' ? '✓' : worst === 'warn' ? '!' : '✗'} HEALTH
     </span>`;
+  }
+
+  private _renderAlertsBanner() {
+    if (this._config?.show_alerts === false || !this._alerts.length) return nothing;
+    const icon = (sev: string) => sev === 'crit' ? '✗' : sev === 'warn' ? '!' : 'ℹ';
+    return html`
+      <div class="alerts-banner">
+        ${this._alerts.map((a) => html`
+          <div class="alert-row alert-${a.severity}">
+            <span class="alert-icon">${icon(a.severity)}</span>
+            <strong>${a.battery}</strong> ${a.message}
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  private _renderHeadroomRow(bat: Battery) {
+    if (this._config?.show_headroom === false) return nothing;
+    if (bat.chargingState === 'standby') return nothing;
+    const hr = this._headroom[bat.sn];
+    if (!hr) return nothing;
+
+    const isCharging    = bat.chargingState === 'charging';
+    const voltHeadroom  = isCharging ? hr.chargeVoltHeadroom : hr.dischargeVoltHeadroom;
+    const currHeadroom  = isCharging ? hr.chargeCurrHeadroom : hr.dischargeCurrHeadroom;
+    const voltLimit     = isCharging ? bat.chargeVoltLimit   : bat.dischargeVoltLimit;
+    const currLimit     = isCharging ? bat.chargeCurrLimit   : bat.dischargeCurrLimit;
+    if (voltHeadroom == null && currHeadroom == null) return nothing;
+
+    // Colour by headroom as a fraction of the limit itself, so it scales across battery models.
+    const pct = (headroom: number | null, limit: number | null) =>
+      headroom != null && limit != null && limit > 0 ? headroom / limit : null;
+    const headroomColour = (p: number | null) =>
+      p == null ? C.dim : p < 0.03 ? C.red : p < 0.08 ? C.orange : C.dim;
+
+    const voltPct = pct(voltHeadroom, voltLimit);
+    const currPct = pct(currHeadroom, currLimit);
+
+    return html`
+      <div class="headroom-row">
+        <span class="headroom-label">${isCharging ? '⬆ CHG HDRM' : '⬇ DCHG HDRM'}</span>
+        ${voltHeadroom != null ? html`<span style=${styleMap({ color: headroomColour(voltPct) })}>${voltHeadroom.toFixed(1)}V</span>` : nothing}
+        ${currHeadroom != null ? html`<span style=${styleMap({ color: headroomColour(currPct) })}>${currHeadroom.toFixed(1)}A</span>` : nothing}
+      </div>
+    `;
   }
 
   private _renderDischargeBanner() {
@@ -548,6 +619,9 @@ export class FelicityFleetCard extends LitElement {
           </div>
           <span style="color:#555e6b">${this._config?.mode?.toUpperCase() ?? 'SSE'}</span>
         </div>
+
+        <!-- Alerts banner -->
+        ${this._renderAlertsBanner()}
 
         <!-- Discharge banner (when any battery discharging) -->
         ${this._renderDischargeBanner()}

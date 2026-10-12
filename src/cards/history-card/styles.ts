@@ -180,6 +180,32 @@ export const historyStyles = css`
     color: #c9d1d9;
   }
 
+  /* ── Energy tab ── */
+  .energy-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    padding: 0 12px 12px;
+  }
+  .energy-stat {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .energy-stat-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #555e6b;
+    margin-bottom: 4px;
+  }
+  .energy-stat-value {
+    font-size: 0.85rem;
+    font-family: 'Courier New', monospace;
+    color: #c9d1d9;
+  }
+
   /* ── State panels ── */
   .state-panel {
     display: flex;

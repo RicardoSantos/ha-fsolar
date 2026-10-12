@@ -4,10 +4,11 @@ import { styleMap } from 'lit/directives/style-map.js';
 import ApexCharts from 'apexcharts';
 import type { HistoryCardConfig } from './types';
 import { historyStyles } from './styles';
-import { FsolarApi, type Battery, type Snapshot, type DailyRawSnapshot } from '../../shared/api';
+import { FsolarApi, type Battery, type Snapshot, type DailyRawSnapshot, type EnergyHistoryEntry, type CostSavingsResponse } from '../../shared/api';
 import { batteryColour } from '../../shared/colours';
+import { formatKwh } from '../../shared/formatters';
 
-type Tab = 'recent' | 'daily' | 'lifetime';
+type Tab = 'recent' | 'daily' | 'lifetime' | 'energy';
 
 export class FelicityHistoryCard extends LitElement {
   static styles = historyStyles;
@@ -21,17 +22,21 @@ export class FelicityHistoryCard extends LitElement {
   @state() private _batteries: Battery[] = [];
   @state() private _snapshots: Snapshot[] = [];
   @state() private _dailySnapshots: DailyRawSnapshot[] = [];
+  @state() private _energyHistory: EnergyHistoryEntry[] = [];
+  @state() private _costSavings: CostSavingsResponse | null = null;
 
   @query('#delta-chart')  private _deltaChartEl?: HTMLElement;
   @query('#temp-chart')   private _tempChartEl?: HTMLElement;
   @query('#daily-delta-chart') private _dailyDeltaChartEl?: HTMLElement;
   @query('#daily-temp-chart')  private _dailyTempChartEl?: HTMLElement;
+  @query('#energy-chart') private _energyChartEl?: HTMLElement;
 
   private _api: FsolarApi | null = null;
   private _deltaChart: ApexCharts | null = null;
   private _tempChart: ApexCharts | null = null;
   private _dailyDeltaChart: ApexCharts | null = null;
   private _dailyTempChart: ApexCharts | null = null;
+  private _energyChart: ApexCharts | null = null;
 
   setConfig(config: HistoryCardConfig) {
     if (!config.url) throw new Error('url is required');
@@ -63,10 +68,12 @@ export class FelicityHistoryCard extends LitElement {
     this._tempChart?.destroy();
     this._dailyDeltaChart?.destroy();
     this._dailyTempChart?.destroy();
+    this._energyChart?.destroy();
     this._deltaChart = null;
     this._tempChart = null;
     this._dailyDeltaChart = null;
     this._dailyTempChart = null;
+    this._energyChart = null;
   }
 
   private async _fetchAll() {
@@ -84,9 +91,16 @@ export class FelicityHistoryCard extends LitElement {
       this._error = null;
     } catch (err) {
       this._error = (err as Error).message === 'AUTH_FAILED' ? 'Auth failed' : (err as Error).message;
-    } finally {
       this._loading = false;
+      return;
     }
+    this._loading = false;
+
+    // Older mcp-fsolar instances (pre-1.0.30) don't have these routes — keep the rest of the card working.
+    try {
+      this._costSavings = await this._api.costSavings(this._config?.tariff);
+      this._energyHistory = this._costSavings.history;
+    } catch { /* endpoint missing or unreachable */ }
   }
 
   private _retry() {
@@ -99,6 +113,9 @@ export class FelicityHistoryCard extends LitElement {
     }
     if (this._tab === 'daily' && this._dailySnapshots.length > 0) {
       this._renderDailyCharts();
+    }
+    if (this._tab === 'energy' && this._energyHistory.length > 0) {
+      this._renderEnergyChart();
     }
   }
 
@@ -281,6 +298,35 @@ export class FelicityHistoryCard extends LitElement {
     }
   }
 
+  private _renderEnergyChart() {
+    if (!this._energyChartEl) return;
+
+    const history = this._energyHistory;
+    const timestamps = history.map((h) => new Date(h.date + 'T12:00:00Z').getTime());
+
+    const opts: ApexCharts.ApexOptions = {
+      chart: { type: 'bar', height: 220, background: '#161b22', toolbar: { show: false }, animations: { enabled: false } },
+      plotOptions: { bar: { columnWidth: '55%' } },
+      dataLabels: { enabled: false },
+      grid: { borderColor: '#30363d' },
+      xaxis: { type: 'datetime', labels: { style: { colors: '#555e6b', fontSize: '0.6rem' } } },
+      yaxis: { title: { text: 'kWh', style: { color: '#555e6b' } }, labels: { style: { colors: '#555e6b', fontSize: '0.6rem' } } },
+      legend: { labels: { colors: '#c9d1d9' }, fontSize: '11px' },
+      tooltip: { theme: 'dark' },
+      series: [
+        { name: 'Charged',    color: '#00ff88', data: history.map((h, i) => [timestamps[i], Math.round(h.kwhCharged * 100) / 100]) },
+        { name: 'Discharged', color: '#ff8c00', data: history.map((h, i) => [timestamps[i], -Math.round(h.kwhDischarged * 100) / 100]) },
+      ],
+    };
+
+    if (this._energyChart) {
+      this._energyChart.updateOptions(opts, true, false);
+    } else {
+      this._energyChart = new ApexCharts(this._energyChartEl, opts);
+      this._energyChart.render();
+    }
+  }
+
   private _renderDeviationHeatmap() {
     if (!this._snapshots.length || !this._batteries.length) {
       return html`<div class="empty-msg">No snapshot data</div>`;
@@ -400,6 +446,45 @@ export class FelicityHistoryCard extends LitElement {
     `;
   }
 
+  private _renderEnergyTab() {
+    if (!this._energyHistory.length) {
+      return html`<div class="state-panel"><span class="empty-msg">No energy data yet</span></div>`;
+    }
+    const cs = this._costSavings;
+    return html`
+      <div class="charts-row" style="grid-template-columns: 1fr">
+        <div class="chart-panel">
+          <div class="chart-title">Daily Energy (kWh) · Charged vs. Discharged</div>
+          <div class="chart-container"><div id="energy-chart"></div></div>
+        </div>
+      </div>
+      ${cs ? html`
+        <div class="energy-summary">
+          <div class="energy-stat">
+            <div class="energy-stat-label">Period</div>
+            <div class="energy-stat-value">${cs.period ? `${cs.period.from} → ${cs.period.to}` : '—'}</div>
+          </div>
+          <div class="energy-stat">
+            <div class="energy-stat-label">Total charged</div>
+            <div class="energy-stat-value">${formatKwh(cs.totalChargedKwh)}</div>
+          </div>
+          <div class="energy-stat">
+            <div class="energy-stat-label">Total discharged</div>
+            <div class="energy-stat-value">${formatKwh(cs.totalDischargedKwh)}</div>
+          </div>
+          <div class="energy-stat">
+            <div class="energy-stat-label">Tariff</div>
+            <div class="energy-stat-value">${cs.tariff != null ? `€${cs.tariff.toFixed(2)}/kWh` : 'not set'}</div>
+          </div>
+          <div class="energy-stat">
+            <div class="energy-stat-label">Est. savings</div>
+            <div class="energy-stat-value" style="color:#00ff88">${cs.estimatedSavings != null ? `€${cs.estimatedSavings.toFixed(2)}` : '—'}</div>
+          </div>
+        </div>
+      ` : nothing}
+    `;
+  }
+
   render() {
     if (!this._config) return html`<div class="card"><div class="state-panel"><span>No config</span></div></div>`;
 
@@ -448,11 +533,17 @@ export class FelicityHistoryCard extends LitElement {
             @click=${() => { this._tab = 'lifetime'; }}>
             Lifetime
           </div>
+          <div class="tab ${this._tab === 'energy' ? 'active' : ''}"
+            @click=${() => { this._destroyCharts(); this._tab = 'energy'; }}>
+            Energy
+            <span class="tab-count">${this._energyHistory.length}d</span>
+          </div>
         </div>
 
         ${this._tab === 'recent'   ? this._renderRecentTab()   : nothing}
         ${this._tab === 'daily'    ? this._renderDailyTab()    : nothing}
         ${this._tab === 'lifetime' ? this._renderLifetimeTab() : nothing}
+        ${this._tab === 'energy'   ? this._renderEnergyTab()   : nothing}
       </div>
     `;
   }

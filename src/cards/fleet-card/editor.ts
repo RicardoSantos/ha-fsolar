@@ -97,6 +97,22 @@ export class FelicityFleetCardEditor extends LitElement {
             Show module temperatures
           </label>
         </div>
+
+        <div class="field">
+          <label class="toggle-row">
+            <input type="checkbox" ?checked=${this._config.show_alerts !== false}
+              @change=${(e: Event) => this._changed('show_alerts', (e.target as HTMLInputElement).checked)} />
+            Show alerts banner
+          </label>
+        </div>
+
+        <div class="field">
+          <label class="toggle-row">
+            <input type="checkbox" ?checked=${this._config.show_headroom !== false}
+              @change=${(e: Event) => this._changed('show_headroom', (e.target as HTMLInputElement).checked)} />
+            Show charge/discharge limit headroom
+          </label>
+        </div>
       </div>
     `;
   }

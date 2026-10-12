@@ -63,18 +63,51 @@ export interface HealthResponse {
   [sn: string]: HealthEntry;
 }
 
+/** Matches mcp-fsolar's analyze.ts Alert shape — `battery` is the alias, not a serial number. */
 export interface Alert {
-  sn: string;
-  alias: string;
-  type: string;
-  message: string;
-  severity: 'info' | 'warn' | 'error';
-  ts: string;
+  severity: 'crit' | 'warn' | 'info';
+  battery:  string;
+  code:     string;
+  message:  string;
 }
 
 export interface AlertsResponse {
   alerts: Alert[];
   count: number;
+}
+
+export interface LimitHeadroomEntry {
+  alias: string;
+  sn: string;
+  voltage: number;
+  current: number;
+  chargeVoltHeadroom:    number | null;
+  dischargeVoltHeadroom: number | null;
+  chargeCurrHeadroom:    number | null;
+  dischargeCurrHeadroom: number | null;
+}
+
+export interface LimitHeadroomResponse {
+  batteries: LimitHeadroomEntry[];
+}
+
+export interface EnergyHistoryEntry {
+  date:            string;
+  kwhCharged:      number;
+  kwhDischarged:   number;
+  kwhNet:          number;
+  peakChargeKw:    number;
+  peakDischargeKw: number;
+  snapshotCount:   number;
+}
+
+export interface CostSavingsResponse {
+  period:             { from: string; to: string } | null;
+  totalDischargedKwh: number;
+  totalChargedKwh:    number;
+  tariff:             number | null;
+  estimatedSavings:   number | null;
+  history:            EnergyHistoryEntry[];
 }
 
 export interface Snapshot {
@@ -162,6 +195,15 @@ export class FsolarApi {
 
   async alerts(): Promise<AlertsResponse> {
     return this.fetch<AlertsResponse>('/alerts');
+  }
+
+  async limitHeadroom(): Promise<LimitHeadroomResponse> {
+    return this.fetch<LimitHeadroomResponse>('/limit-headroom');
+  }
+
+  async costSavings(tariff?: number): Promise<CostSavingsResponse> {
+    const qs = tariff != null ? `?tariff=${encodeURIComponent(tariff)}` : '';
+    return this.fetch<CostSavingsResponse>(`/cost-savings${qs}`);
   }
 
   async snapshotsIntraday(): Promise<SnapshotsResponse> {

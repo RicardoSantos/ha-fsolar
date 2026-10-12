@@ -7,6 +7,21 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.0] — 2026-10-12
+
+### Added
+- **Fleet card — alerts banner**: surfaces mcp-fsolar's `/alerts` (low SOC, cell imbalance, temp, SOH, stale data, etc.) at the top of the card, colour-coded by severity. New `show_alerts` config option (default `true`).
+- **Fleet card — limit headroom row**: shows how close each battery's voltage/current is to its charge or discharge limit (from `/limit-headroom`), colour-coded as a fraction of the limit. New `show_headroom` config option (default `true`).
+- **History card — Energy tab**: new tab with a daily charged-vs-discharged kWh bar chart and a summary (period, totals, tariff, estimated savings) from `/cost-savings`. New `tariff` config option to override the server's `FELICITY_TARIFF_KWH` default.
+
+### Fixed
+- **`Alert` type in `shared/api.ts` was wrong** — declared `sn`/`alias`/`type`/`ts` fields and a `'info'|'warn'|'error'` severity that don't exist on mcp-fsolar's actual `/alerts` response (`{ severity: 'crit'|'warn'|'info', battery, code, message }`). The endpoint was fetchable but had never actually been wired into any card, so this went unnoticed. Corrected to match the real shape.
+
+### Requires
+- mcp-fsolar **v1.3.1+** confirmed compatible (the endpoints used here — `/alerts`, `/limit-headroom`, `/cost-savings` — have existed since v1.0.30/v1.2.x; older instances degrade gracefully, each section just stays hidden).
+
+---
+
 ## [1.0.7] — 2026-07-13
 
 ### Changed
